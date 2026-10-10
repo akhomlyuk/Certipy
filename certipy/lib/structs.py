@@ -94,10 +94,29 @@ class SequenceOfEnctype(core.SequenceOf):
     _child_spec = core.Integer
 
 
+class KerberosString(core.GeneralString):
+    """
+    A Kerberos string that round-trips UTF-8.
+
+    Kerberos ``KerberosString`` is ``GeneralString`` by tag, but Active
+    Directory carries names such as ``КОРПОРАЦИЯ.РФ`` as UTF-8.
+    ``asn1crypto``'s ``GeneralString`` decodes as latin-1, which turns those
+    names into mojibake. Subclassing keeps the tag intact while overriding the
+    codec, and avoids redefining ``_encoding`` on the base class where it
+    would also affect ``NumericString``/``PrintableString``, where latin-1 is
+    what X.680 actually mandates.
+
+    This mirrors ``impacket.krb5.asn1.KerberosString``, which sets
+    ``encoding = 'utf-8'`` upstream.
+    """
+
+    _encoding = "utf-8"
+
+
 class SequenceOfKerberosString(core.SequenceOf):
     """Sequence of Kerberos strings."""
 
-    _child_spec = core.GeneralString
+    _child_spec = KerberosString
 
 
 class PrincipalName(core.Sequence):
@@ -203,7 +222,7 @@ class Ticket(core.Sequence):
 
     _fields = [
         ("tkt-vno", core.Integer, {"tag_type": TAG, "tag": 0}),
-        ("realm", core.GeneralString, {"tag_type": TAG, "tag": 1}),
+        ("realm", KerberosString, {"tag_type": TAG, "tag": 1}),
         ("sname", PrincipalName, {"tag_type": TAG, "tag": 2}),
         ("enc-part", EncryptedData, {"tag_type": TAG, "tag": 3}),  # EncTicketPart
     ]
@@ -244,7 +263,7 @@ class KdcReqBody(core.Sequence):
     _fields = [
         ("kdc-options", KDCOptions, {"tag_type": TAG, "tag": 0}),
         ("cname", PrincipalName, {"tag_type": TAG, "tag": 1, "optional": True}),
-        ("realm", core.GeneralString, {"tag_type": TAG, "tag": 2}),
+        ("realm", KerberosString, {"tag_type": TAG, "tag": 2}),
         ("sname", PrincipalName, {"tag_type": TAG, "tag": 3, "optional": True}),
         ("from", core.GeneralizedTime, {"tag_type": TAG, "tag": 4, "optional": True}),
         ("till", core.GeneralizedTime, {"tag_type": TAG, "tag": 5, "optional": True}),
