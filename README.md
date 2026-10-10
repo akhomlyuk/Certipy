@@ -77,19 +77,65 @@ See the [Installation Guide](https://github.com/ly4k/Certipy/wiki/04-%E2%80%90-I
 
 ### Установка
 
+**Вариант A — venv через uv** (рекомендуется). `uv venv` создаёт окружение
+**без pip**, поэтому для варианта с pip нужен флаг `--seed`.
+
 ```bash
-pip install git+https://github.com/akhomlyuk/Certipy.git
+# uv
+uv venv --python 3.12 .venv
+source .venv/bin/activate
+uv pip install "certipy-ad @ git+https://github.com/akhomlyuk/Certipy.git"
 ```
 
-С [uv](https://docs.astral.sh/uv/):
+```bash
+# pip — обязательно --seed, иначе pip в venv не будет
+uv venv --python 3.12 --seed .venv
+source .venv/bin/activate
+pip install "certipy-ad @ git+https://github.com/akhomlyuk/Certipy.git"
+```
+
+Активация нужна, чтобы `certipy` и `python` указывали на venv, а не на системные.
+Без активации можно ставить по пути, но `certipy` в PATH не попадёт:
 
 ```bash
-uv tool install git+https://github.com/akhomlyuk/Certipy.git
-# либо в проекте с lock-файлом:
+uv pip install --python .venv/bin/python "certipy-ad @ git+https://github.com/akhomlyuk/Certipy.git"
+.venv/bin/certipy req ...
+```
+
+**Вариант B — `uv tool install`.** Это **не venv**. uv создаёт отдельное
+окружение в `~/.local/share/uv/tools/certipy-ad` и кладёт бинарник в
+`~/.local/bin`. Системные пакеты при этом не страдают, но:
+
+- окружение нельзя активировать, туда нельзя доустановить пакеты обычным `pip`;
+- оно общее для всей машины, не per-project;
+- обновляется только через `uv tool upgrade`.
+
+Для разового использования CLI это удобно, для курса — нет: нельзя положить
+рядом другие инструменты в то же окружение.
+
+```bash
+uv tool install "certipy-ad @ git+https://github.com/akhomlyuk/Certipy.git"
+```
+
+**Вариант C — в проекте с lock-файлом.** Пинытся версия, `uv sync` поднимает
+то же окружение у всей группы.
+
+```bash
 uv add "certipy-ad @ git+https://github.com/akhomlyuk/Certipy.git"
+uv sync
+uv run certipy req ...
 ```
 
 Нужны Python 3.12+ и impacket >= 0.13.
+
+### Проверить, что всё встало в venv, а не глобально
+
+```bash
+python -c "import certipy, sys; print(certipy.__file__)"
+```
+
+Путь обязан начинаться с пути вашего venv (`.../.venv/...`). Если видите
+`/usr/lib/python3/...` — стоит глобально, и нужно разбираться с тем, как ставили.
 
 ### Проверка
 
